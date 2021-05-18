@@ -1,0 +1,18 @@
+Thank you for installing {{ .Chart.Name }}.
+
+Your release is named {{ .Release.Name }}.
+
+To learn more about the release, try:
+
+  $ helm status {{ .Release.Name }}
+  $ helm get all {{ .Release.Name }}
+
+To delete the release, try:
+
+  $ helm delete {{ .Release.Name }}
+
+To access the Spring boot application, try:
+
+  kubectl get service
+  and make use of service dns instead of localhost
+

@@ -1,0 +1,23 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: {{ .Release.Name }}{{ .Values.cronjob1.name }}
+spec:
+  schedule: {{ quote .Values.cronjob1.schedule }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          imagePullSecrets:
+          - name: {{ .Release.Name }}{{ .Values.imageCredentials.name }}
+          containers:
+          - name: {{ .Values.cronjob1.name }}
+            image: {{ .Values.cronjob1.image }}
+            imagePullPolicy: {{ .Values.cronjob1.imagePullPolicy }}
+            env:   # Setting Enviornmental Variables
+            - name: KAFKA   # Setting Database host address from configMap
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-configmap  # name of configMap
+                  key: kafka_producer
+          restartPolicy: {{ .Values.cronjob1.restartPolicy }}

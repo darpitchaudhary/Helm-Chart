@@ -1,0 +1,96 @@
+app:
+  name: springboot-postgres-k8s
+  label: csye7125-webapp-deployment
+  group: app
+  replicaCount: 1
+  container:
+    image: 'darpitchaudhary/webapp:90668a653128a1077087482c56475214f1ba02ec'
+    imagePullPolicy: "Always"
+    port: 8080 
+    config: []
+    env: 
+      - key: DB_HOST
+        value: host
+      - key: DB_NAME
+        value: name
+  service:
+    type: ClusterIP
+    port: 8080
+
+imageCredentials:
+  name: regcred
+  registry: https://index.docker.io/v1/
+  username: darpitchaudhary
+  password: ashoka2601D#
+
+
+postgres:
+  secrets:
+    name: postgres-secrets
+    data: 
+      - key: postgres_user
+        value: postgres
+      - key: postgres_password
+        value: postgres 
+  config:
+    name: postgres-config
+    data: 
+      - key: host
+        value: termproject-310217:us-east1:webapp-instance-20b2a478 #rds-webapp.c8xrccb2wii3.us-east-1.rds.amazonaws.com
+      - key: name
+        value: postgres
+      - key: kafka_producer
+        value: kafka_lb
+
+cronjob1:
+  name: hacker-noon-api
+  schedule: "*/10 * * * *"
+  pullsecret: regcred
+  image: 'darpitchaudhary/cronjob:320d15599edd68e1bd5a3fd4a209610c2d9c2302'
+  imagePullPolicy: IfNotPresent
+  restartPolicy: OnFailure
+
+cronjob2:
+  name: hacker-noon-api-news
+  schedule: "*/10 * * * *"
+  pullsecret: regcred
+  image: 'darpitchaudhary/cronjobnew:320d15599edd68e1bd5a3fd4a209610c2d9c2302'
+  imagePullPolicy: IfNotPresent
+  restartPolicy: OnFailure
+
+cronjob3:  
+  name: hacker-noon-api-best
+  schedule: "*/10 * * * *"
+  pullsecret: regcred
+  image: 'darpitchaudhary/cronjobbest:320d15599edd68e1bd5a3fd4a209610c2d9c2302'
+  imagePullPolicy: IfNotPresent
+  restartPolicy: OnFailure
+
+    
+deployment:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  replicas: 1
+  minReadySeconds: 30
+  progressDeadlineSeconds: 300
+
+hpascaling:
+  name: webapphpa
+  cpuUtilizationPercent: 5
+  minReplicas: 1
+  maxReplicas: 5
+  limit: "500m"
+  request: "200m"
+
+proxy:
+  db: -instances=termproject-310217:us-east1:webapp-instance-20b2a478=tcp:5432
+
+instance:
+  credentials: cloudsql-instance-credentials-d
+  credential_file: -credential_file=/secrets/cloudsql/sql_credentials.json
+
+
+

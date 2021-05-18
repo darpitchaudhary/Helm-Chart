@@ -1,0 +1,13 @@
+apiVersion: v2
+name: k8s_chart
+description: A Helm chart for Kubernetes Object for Spring Boot app development
+type: application
+version: 0.1.0
+sources:
+  - https://github.com/CSYE7125AdvanceCloud-ShubhamDarpit/helmchart-app.git
+maintainers:
+  - name: Shubham Mahesh Kawane
+    email: kawane.s@northeastern.edu
+  - name: Darpit Chaudhary
+    email: chaudhary.da@northeastern.edu
+appVersion: "1.16.0"

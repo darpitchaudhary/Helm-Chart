@@ -1,0 +1,85 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}{{ .Values.app.name }}
+spec:
+  replicas: {{ .Values.deployment.replicas }}
+  progressDeadlineSeconds: {{ .Values.deployment.progressDeadlineSeconds }}
+  minReadySeconds: {{ .Values.deployment.minReadySeconds }}
+  strategy:
+    rollingUpdate:
+      maxSurge: {{ .Values.deployment.strategy.rollingUpdate.maxSurge }}
+      maxUnavailable: {{ .Values.deployment.strategy.rollingUpdate.maxUnavailable }}
+    type: {{ .Values.deployment.strategy.type }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}{{ .Values.app.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}{{ .Values.app.name }}
+    spec:
+      serviceAccountName: webapp-svc-account
+      imagePullSecrets:
+        - name: {{ .Release.Name }}{{ .Values.imageCredentials.name }}
+      containers:
+        - name: {{ .Release.Name }}{{ .Values.app.name }}
+          image: {{ .Values.app.container.image }} 
+          imagePullPolicy: {{ .Values.app.container.imagePullPolicy }} 
+          ports:
+            - containerPort: {{ .Values.app.container.port }}
+          readinessProbe:
+            httpGet:
+              path: /v1/readiness/test
+              port: {{ .Values.app.container.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /v1/liveness/test
+              port: {{ .Values.app.container.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          env:   # Setting Enviornmental Variables
+            - name: DB_HOST   # Setting Database host address from configMap
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-configmap  # name of configMap
+                  key: host
+            - name: DB_NAME  # Setting Database name from configMap
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-configmap
+                  key: name
+            - name: POSTGRES_USER  # Setting Database username from Secret
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-secret # Secret Name
+                  key: postgres_user
+            - name: POSTGRES_PASSWORD # Setting Database password from Secret
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-secret
+                  key: postgres_password
+
+        - name: cloudsql-proxy
+          image: gcr.io/cloudsql-docker/gce-proxy:1.16
+          command: 
+            - "/cloud_sql_proxy"
+            - "--dir=/cloudsql"
+            - {{ .Values.proxy.db }}
+            - "-credential_file=/secrets/cloudsql/sql_credentials.json"
+          volumeMounts:
+            - name: my-secrets-volume
+              mountPath: /secrets/cloudsql
+              readOnly: true
+            - name: cloudsql
+              mountPath: /cloudsql
+      volumes:
+        - name: my-secrets-volume
+          secret:
+            secretName: {{ .Values.instance.credentials }}
+        - name: cloudsql
+          emptyDir: { }
+        
